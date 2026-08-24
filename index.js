@@ -41,13 +41,18 @@ for(const file of eventFiles) {
 let channel;
 
 client.once('clientReady', async () => {
-    channel = await client.channels.fetch(process.env.CHANNEL_ID);
-    await queryRetry("CREATE TABLE IF NOT EXISTS reminder_store (reminder VARCHAR(255))");
-    await setUp();
-    console.log("Setup complete");
+    try {
+        await queryRetry("CREATE TABLE IF NOT EXISTS reminder_store (reminder VARCHAR(255))");
+        await setUp();
+        console.log("Setup complete");
+    }
+    catch(e) {
+        console.log("Error setting up");
+        await channel.send("Error setting up");
+    }
 });
 
-client.login(process.env.TOKEN).catch((e) => {
+client.login(process.env.TOKEN).catch(async(e) => {
     console.log("Error logging into discord", e);
 });
 
@@ -69,9 +74,8 @@ async function checkReminders() {
         if(reminderStore.size > 0) {
             const playerData = await safeFetch(`https://api.torn.com/user/?selections=profile,icons,bars&key=${process.env.API_KEY}&comment=ReminderBot`);
             if(!playerData) return;
-            console.log(playerData);
-            if(reminderStore.has("drug"))
-                if(!("icon50" in playerData.icons) && !("icon51" in playerData.icons) && !("icon52" in playerData.icons))
+            if(reminderStore.has("drug")) {
+                if(!("icon49" in playerData.icons) && !("icon50" in playerData.icons) && !("icon51" in playerData.icons) && !("icon52" in playerData.icons) && !("icon53" in playerData.icons)) {
                     if(!reminderCache.has("drug")) {
                         await channel.send({
                             content: `@everyone | Drug cooldown ended | [Items](https://www.torn.com/item.php)`,
@@ -79,10 +83,12 @@ async function checkReminders() {
                         });
                         reminderCache.add("drug");
                     }
+                }
                 else
                     reminderCache.delete("drug");
-            if(reminderStore.has("energy"))
-                if(playerData.energy.current === playerData.energy.maximum)
+            }
+            if(reminderStore.has("energy")) {
+                if(playerData.energy.current === playerData.energy.maximum) {
                     if(!reminderCache.has("energy")) {
                         await channel.send({
                             content: `@everyone | Energy bar full | [Gym](https://www.torn.com/gym.php)`,
@@ -90,10 +96,12 @@ async function checkReminders() {
                         });
                         reminderCache.add("energy");
                     }
+                }
                 else
                     reminderCache.delete("energy");
-            if(reminderStore.has("nerve"))
-                if(playerData.nerve.current === playerData.nerve.maximum)
+            }
+            if(reminderStore.has("nerve")) {
+                if(playerData.nerve.current === playerData.nerve.maximum) {
                     if(!reminderCache.has("nerve")) {
                         await channel.send({
                             content: `@everyone | Nerve bar full | [Crimes](https://www.torn.com/page.php?sid=crimes#/)`,
@@ -101,19 +109,23 @@ async function checkReminders() {
                         });
                         reminderCache.add("nerve");
                     }
+                }
                 else
                     reminderCache.delete("nerve");
-            if(reminderStore.has("race"))
-                if(!("icon17" in playerData.icons))
-                    if(!reminderCache.has("nerve")) {
+            }
+            if(reminderStore.has("race")) {
+                if(!("icon17" in playerData.icons)) {
+                    if(!reminderCache.has("race")) {
                         await channel.send({
                             content: `@everyone | Race ended | [Race](https://www.torn.com/page.php?sid=racing)`,
                             allowedMentions: { parse: ["everyone"] },
                         });
                         reminderCache.add("race");
                     }
+                }
                 else
                     reminderCache.delete("race");
+            }
         }
     }
     catch(e) {
