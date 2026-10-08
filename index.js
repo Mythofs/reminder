@@ -38,17 +38,15 @@ for(const file of eventFiles) {
     }
 }
 
-let channel;
-
 client.once('clientReady', async () => {
     try {
+        let channel = await client.channels.fetch(process.env.CHANNEL_ID);
         await queryRetry("CREATE TABLE IF NOT EXISTS reminder_store (reminder VARCHAR(255))");
-        await setUp();
+        await setUp(channel);
         console.log("Setup complete");
     }
     catch(e) {
-        console.log("Error setting up");
-        await channel.send("Error setting up");
+        console.log("Error setting up" + e);
     }
 });
 
@@ -56,11 +54,11 @@ client.login(process.env.TOKEN).catch(async(e) => {
     console.log("Error logging into discord", e);
 });
 
-async function setUp() {
+async function setUp(channel) {
     try {
-        await checkReminders();
+        await checkReminders(channel);
         setInterval(async() => {
-            await checkReminders();
+            await checkReminders(channel);
         }, 30000)
     }
     catch(e) {
@@ -68,7 +66,7 @@ async function setUp() {
         await channel.send("Error setting up " + e);
     }
 }
-async function checkReminders() {
+async function checkReminders(channel) {
     try {
         const reminderStore = new Set((await queryRetry("SELECT * FROM reminder_store")).map(row => row.reminder));
         if(reminderStore.size > 0) {
@@ -125,6 +123,20 @@ async function checkReminders() {
                 }
                 else
                     reminderCache.delete("race");
+            }
+            if(reminderStore.has("shoplifting")) {
+                const shopliftingData = await safeFetch(`https://api.torn.com/torn/?selections=shoplifting&key=${process.env.API_KEY}&comment=ReminderBot`);
+                if(shopliftingData.shoplifting.jewelry_store.every((el) => el.disabled)) {
+                    if(!reminderCache.has("shoplifting")) {
+                        await channel.send({
+                            content: `@everyone | Jewelry store down`,
+                            allowedMentions: { parse: ["everyone"] },
+                        });
+                        reminderCache.add("shoplifting");
+                    }
+                }
+                else
+                    reminderCache.delete("shoplifting");
             }
         }
     }

@@ -12,6 +12,7 @@ module.exports = {
                 { label: "Energy", value: "energy", default: reminderStore.has("energy") },
                 { label: "Nerve", value: "nerve", default: reminderStore.has("nerve") },
                 { label: "Race", value: "race", default: reminderStore.has("race") },
+                { label: "Shoplifting", value: "shoplifting", default: reminderStore.has("shoplifting") },
             ]);
             const reminderLabel = new LabelBuilder().setLabel("Select Reminders").setCheckboxGroupComponent(reminderCheckbox);
             reminderModal.addLabelComponents(reminderLabel);
